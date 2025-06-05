@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../Models/user');
 const crypto = require('crypto');
 
+const passwordRegex = /^(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;
 exports.registerUser = async (req, res) => {
   const { username, email, password } = req.body;
 
