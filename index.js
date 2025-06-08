@@ -7,19 +7,16 @@ const authRoutes = require('./Routes/auth');
 
 const app = express();
 
-// Root route
+app.use(cors());
+app.use(express.json());
+
 app.get('/', (req, res) => {
   res.send('API is running...');
 });
 
-// Connect to DB
 connectDB();
 
-
-
-// Routes
 app.use('/api', authRoutes);
 
-// Server start
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log('Server running on port ${PORT}'));
