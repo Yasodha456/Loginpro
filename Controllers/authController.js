@@ -3,7 +3,8 @@ const jwt = require('jsonwebtoken');
 const User = require('../Models/user');
 const crypto = require('crypto');
 
-const passwordRegex = /^(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;
+const passwordRegex = /^(?=.[A-Z])(?=.\d)[A-Za-z\d@$!%*?&]{8,}$/;  // fixed regex
+
 exports.registerUser = async (req, res) => {
   const { username, email, password } = req.body;
 
@@ -24,7 +25,6 @@ exports.registerUser = async (req, res) => {
 };
 
 exports.loginUser = async (req, res) => {
-  
   const { email, password } = req.body;
 
   try {
@@ -52,14 +52,14 @@ exports.resetPassword = async (req, res) => {
 
   if (!passwordRegex.test(newPassword)) {
     return res.status(400).json({
-      error: 'Password must meet complexity requirements'
+      error: 'Password must meet complexity requirements',
     });
   }
 
   try {
     const user = await User.findOne({
       resetToken: token,
-      resetTokenExpiry: { $gt: Date.now() }
+      resetTokenExpiry: { $gt: Date.now() },
     });
 
     if (!user) return res.status(400).json({ error: 'Invalid or expired token' });
@@ -75,8 +75,6 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
-
-
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
   try {
@@ -88,11 +86,9 @@ exports.forgotPassword = async (req, res) => {
     user.resetTokenExpiry = Date.now() + 3600000; // 1 hour
     await user.save();
 
-
     res.json({ message: 'Password reset link sent to email' });
   } catch (err) {
     console.error('Forgot password error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 };
-
