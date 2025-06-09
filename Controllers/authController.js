@@ -3,7 +3,8 @@ const jwt = require('jsonwebtoken');
 const User = require('../Models/user');
 const crypto = require('crypto');
 
-const passwordRegex = /^(?=.[A-Z])(?=.\d)[A-Za-z\d@$!%*?&]{8,}$/;  // fixed regex
+// Fixed password regex - make sure it requires at least one uppercase and one digit
+const passwordRegex = /^(?=.[A-Z])(?=.\d)[A-Za-z\d@$!%*?&]{8,}$/;
 
 exports.registerUser = async (req, res) => {
   const { username, email, password } = req.body;
@@ -12,6 +13,12 @@ exports.registerUser = async (req, res) => {
     const existingUser = await User.findOne({ email });
     if (existingUser)
       return res.status(400).json({ error: 'User with this email already exists' });
+
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        error: 'Password must be at least 8 characters long, contain at least one uppercase letter and one digit',
+      });
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({ username, email, password: hashedPassword });
@@ -58,18 +65,17 @@ exports.loginUser = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Login error:', error); // <- This will catch actual crash
+    console.error('Login error:', error);
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
-
 
 exports.resetPassword = async (req, res) => {
   const { token, newPassword } = req.body;
 
   if (!passwordRegex.test(newPassword)) {
     return res.status(400).json({
-      error: 'Password must meet complexity requirements',
+      error: 'Password must be at least 8 characters long, contain at least one uppercase letter and one digit',
     });
   }
 
@@ -88,6 +94,7 @@ exports.resetPassword = async (req, res) => {
 
     res.json({ message: 'Password reset successfully' });
   } catch (err) {
+    console.error('Reset password error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -102,6 +109,8 @@ exports.forgotPassword = async (req, res) => {
     user.resetToken = token;
     user.resetTokenExpiry = Date.now() + 3600000; // 1 hour
     await user.save();
+
+    // TODO: Send token via email here using a mail service
 
     res.json({ message: 'Password reset link sent to email' });
   } catch (err) {
