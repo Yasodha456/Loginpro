@@ -25,27 +25,44 @@ exports.registerUser = async (req, res) => {
 };
 
 exports.loginUser = async (req, res) => {
-  const { email, password } = req.body;
-
   try {
+    const { email, password } = req.body;
+    console.log('Login request for:', email);
+
     const user = await User.findOne({ email });
-    if (!user)
+    if (!user) {
+      console.log('User not found');
       return res.status(401).json({ error: 'Invalid credentials' });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch)
+    if (!isMatch) {
+      console.log('Incorrect password');
       return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      console.error('JWT_SECRET is missing!');
+      return res.status(500).json({ error: 'Server config error' });
+    }
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: '1h',
     });
 
-    res.json({ token, user: { username: user.username, email: user.email } });
-  } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({ error: 'Server error' });
+    return res.json({
+      token,
+      user: {
+        username: user.username,
+        email: user.email,
+      },
+    });
+  } catch (error) {
+    console.error('Login error:', error); // <- This will catch actual crash
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
 
 exports.resetPassword = async (req, res) => {
   const { token, newPassword } = req.body;
